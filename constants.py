@@ -26,3 +26,15 @@ PLAY_AGAIN_Y  = 328
 WHITE = (255, 255, 255)
 # How fast to flip the discs
 FLIP_DISC_SPEED = 60
+# to draw human win image
+HUMAN_WIN_X   = 166
+HUMAN_WIN_Y   = 253
+# to draw AI win image
+AI_WIN_X      = 195
+AI_WIN_Y      = 253
+# to draw human pass image
+HUMAN_PASS_X  = 154
+HUMAN_PASS_Y  = 330
+# to draw AI pass image
+AI_PASS_X     = 156
+AI_PASS_Y     = 330

@@ -71,19 +71,97 @@ def draw_screen():
     if len(game.flip_discs) > 0:
         first_disc = game.flip_discs[0]
 
+        if game.board[first_disc[0]][first_disc[1]] == Othello.BLACK:
+            start, stop, step = 0, 9, 1
+        else:
+            start, stop, step = 8, -1, -1
+
         for index in range(start, stop, step):
             draw_board()
             draw_play_color()
             draw_disc_counter()
             draw_discs_on_board()
+            for disc in game.flip_discs:
+                x, y = rowcol_to_xy(disc[0], disc[1])
+                screen.blit(img_disc.subsurface((index * DISC_WIDTH, 0, DISC_WIDTH, DISC_HEIGHT)), (x+1, y+2))
+
+            pygame.time.delay(FLIP_DISC_SPEED)
+            draw_legal_moves_marker()
             pygame.display.update()
     else:
         draw_board()
         draw_play_color()
         draw_disc_counter()
         draw_discs_on_board()
+        draw_legal_moves_marker()
         pygame.display.update()
 
+def draw_legal_moves_marker():
+    if play[game.player_turn] == "human":
+        for move in game.legal_moves:
+            x, y = rowcol_to_xy(move[0], move[1])
+            screen.blit(img_marker1, (x+18, y+19))
+
+def play_again():
+    if game.black_discs > game.white_discs:
+        if play[Othello.BLACK] == "human":
+            screen.blit(img_human_win, (HUMAN_WIN_X, HUMAN_WIN_Y))
+        else:
+            screen.blit(img_ai_win, (AI_WIN_X, AI_WIN_Y))
+    elif game.white_discs > game.black_discs:
+        if play[Othello.WHITE] == "human":
+            screen.blit(img_human_win, (HUMAN_WIN_X, HUMAN_WIN_Y))
+        else:
+            screen.blit(img_ai_win, (AI_WIN_X, AI_WIN_Y))
+    else:
+        screen.blit(img_draw, (DRAW_GAME_X, DRAW_GAME_Y))
+
+    screen.blit(img_play_again, (PLAY_AGAIN_X, PLAY_AGAIN_Y))
+    pygame.display.update()
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_y:
+                    return True
+                elif event.key == pygame.K_n:
+                    return False
+
+def player_pass(who):
+    original_screen = screen.copy()
+
+    if play[who] == "human":
+        screen.blit(img_human_pass, (HUMAN_PASS_X, HUMAN_PASS_Y))
+    else:
+        screen.blit(img_ai_pass, (AI_PASS_X, AI_PASS_Y))
+
+    pygame.display.update()
+
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                screen.blit(original_screen, (0, 0))
+                pygame.display.update()
+                return
+
+def player_move():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONUP:
+                mouse_xy = pygame.mouse.get_pos()
+                row, col = xy_to_rowcol(*mouse_xy)
+                if [row, col] in game.legal_moves:
+                    return row, col
 
 # Initialize Pygame
 pygame.init()
@@ -104,6 +182,13 @@ img_board = pygame.image.load(r"images\board.png").convert()
 img_disc = pygame.image.load(r"images\disc.png").convert_alpha()
 img_white_disc = img_disc.subsurface((0, 0, DISC_WIDTH, DISC_HEIGHT))
 img_black_disc = img_disc.subsurface((DISC_WIDTH * 8, 0, DISC_WIDTH, DISC_HEIGHT))
+img_ai_win = pygame.image.load(r"images\ai_win.png").convert_alpha()
+img_ai_pass = pygame.image.load(r"images\ai_pass.png").convert_alpha()
+img_human_win = pygame.image.load(r"images\you_win.png").convert_alpha()
+img_human_pass = pygame.image.load(r"images\you_pass.png").convert_alpha()
+img_draw = pygame.image.load(r"images\draw.png").convert_alpha()
+img_play_again = pygame.image.load(r"images\play_again.png").convert_alpha()
+img_marker1 = pygame.image.load(r"images\marker.png").convert_alpha()
 
 
 
@@ -114,9 +199,28 @@ draw_screen()
 
 # Game loop  
 while True:
-		if game:
-			game = Othello()
-			draw_screen()
-		else:
-			pygame.quit()
-			exit()
+    if game.game_over:
+        if play_again():
+            game = Othello()
+            play[Othello.BLACK], play[Othello.WHITE] = play[Othello.WHITE], play[Othello.BLACK]
+            last_turn = None
+            draw_screen()
+        else:
+            pygame.quit()
+            exit()
+
+    if last_turn == game.player_turn:
+        player_pass(game.player_turn * -1)
+    else:
+        last_turn = game.player_turn
+
+    if play[game.player_turn] == "human":
+        move_row, move_col = player_move()
+        game.move(move_row, move_col)
+        draw_screen()
+        continue
+
+    if play[game.player_turn] == "ai":
+        move_row, move_col = game.ai()
+        game.move(move_row, move_col)
+        draw_screen()
